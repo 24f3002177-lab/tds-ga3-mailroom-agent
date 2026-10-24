@@ -127,7 +127,7 @@ def create_evaluation(evaluation_id, request_hash, digest, verifier, propose_res
 def complete_evaluation(evaluation_id, commit_hash, commit_response):
     """Mark completed, but only if it was still awaiting receipts."""
     with closing(connect()) as c:
-      cur = c.execute(
+        cur = c.execute(
             """UPDATE evaluations
                SET status = 'completed', commit_hash = ?, commit_json = ?
                WHERE evaluation_id = ? AND status = 'awaiting_receipts'""",
