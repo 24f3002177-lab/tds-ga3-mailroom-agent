@@ -5,7 +5,7 @@ import threading
 from contextlib import closing
 from pathlib import Path
 
-DB_PATH = Path(file).with_name("mailroom.db")
+DB_PATH = Path(__file__).with_name("mailroom.db")
 _LOCKS = {}
 _LOCKS_GUARD = threading.Lock()
 
