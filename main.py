@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import json
+import traceback
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
@@ -21,9 +22,7 @@ app = FastAPI(title="Mailroom Agent", redirect_slashes=False)
 
 
 class Reject(Exception):
-    def init(self, status, code):
-        self.status = status
-        self.code = code
+    """args=(http_status,error_code)"""
 
 
 def error(status, code):
@@ -262,8 +261,16 @@ async def mailroom(request: Request):
         else:
             return error(400, "INVALID_OPERATION")
     except Reject as r:
-        return error(r.status, r.code)
-    except Exception as exc:
-        print("UNEXPECTED ERROR:", repr(exc))
-        return error(500, "INTERNAL_ERROR")
+        try:
+            status, code = int(r.args[0]), str(r.args[1])
+        except Exception:
+            status, code = 400, "REJECTED"
+        return JSONResponse(
+            status_code=status, content={"error": {"code": code}}
+        )
+    except Exception:
+        traceback.print_exc()
+        return JSONResponse(
+            status_code=500, content={"error": {"code": "INTERNAL_ERROR"}}
+        )
     return JSONResponse(status_code=200, content=result)
