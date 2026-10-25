@@ -265,6 +265,7 @@ async def mailroom(request: Request):
             status, code = int(r.args[0]), str(r.args[1])
         except Exception:
             status, code = 400, "REJECTED"
+        print("REJECT",operation, status, code, flush=True)
         return JSONResponse(
             status_code=status, content={"error": {"code": code}}
         )
