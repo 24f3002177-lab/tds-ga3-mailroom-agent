@@ -165,7 +165,7 @@ def handle_commit(body):
     with storage.eval_lock(eid):
         ev = storage.get_evaluation(eid)
         if ev is None:
-            raise Reject(404, "UNKNOWN_EVALUATION")
+            raise Reject(409, "UNKNOWN_EVALUATION")
 
         if ev["status"] == "completed":
             if ev["commitHash"] == req_hash:
