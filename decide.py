@@ -306,6 +306,7 @@ def fallback(d):
 
 def ask_chunk(chunk):
     """chunk: list of (key, dossier). Returns {dossierId: raw answer}."""
+    time.sleep(4)  # Pause 4 seconds before each call to stay under Gemini's RPM limit
     text = "\n\n".join(render(d) for _k, d in chunk)
     kwargs = dict(
         model=AI_MODEL,
@@ -315,16 +316,9 @@ def ask_chunk(chunk):
             {"role": "user", "content": text},
         ],
     )
-    for attempt in range(5):
+    for attempt in range(3):
         try:
-            try:
-                response = get_client().chat.completions.create(
-                    reasoning_effort="low", max_completion_tokens=12000, **kwargs
-                )
-            except Exception as first:
-                if "429" in repr(first):
-                    raise
-                response = get_client().chat.completions.create(**kwargs)
+            response = get_client().chat.completions.create(max_completion_tokens=4000, **kwargs)
             raw = (response.choices[0].message.content or "").strip()
             if raw.startswith("`"):
                 raw = raw.strip("`")
@@ -338,11 +332,10 @@ def ask_chunk(chunk):
         except Exception as exc:
             print("AI CALL FAILED:", repr(exc), flush=True)
             if "429" in repr(exc) and attempt < 2:
-                time.sleep(6 * (attempt + 1))
+                time.sleep(8 * (attempt + 1))
                 continue
             return {}
     return {}
-
 
 def decide_dossiers(dossiers):
     """Return {dossierId: decision}. Uses the saved cache where it can."""
