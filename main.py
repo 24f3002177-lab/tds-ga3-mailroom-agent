@@ -12,8 +12,8 @@ import decide
 import storage
 
 # Smaller chunks, more workers: keeps each request inside the time limit.
-decide.CHUNK = 6
-decide.WORKERS = 12
+decide.CHUNK = 12
+decide.WORKERS = 6
 
 PROFILE = "ga5-mailroom-action-gate/v2"
 MAX_BODY = 6 * 1024 * 1024
