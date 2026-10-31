@@ -1,3 +1,4 @@
+import time
 import json
 import os
 import re
@@ -305,26 +306,42 @@ def fallback(d):
 
 def ask_chunk(chunk):
     """chunk: list of (key, dossier). Returns {dossierId: raw answer}."""
-    try:
-        text = "\n\n".join(render(d) for _k, d in chunk)
-        response = get_client().chat.completions.create(
-            model=AI_MODEL,
-            reasoning_effort="low",
-            max_completion_tokens=12000,
-            response_format={"type": "json_object"},
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": text},
-            ],
-        )
-        data = json.loads(response.choices[0].message.content)
-        return {
-            x.get("dossierId"): x
-            for x in data.get("decisions", []) if isinstance(x, dict)
-        }
-    except Exception as exc:
-        print("AI CALL FAILED:", repr(exc), flush=True)
-        return {}
+    text = "\n\n".join(render(d) for _k, d in chunk)
+    kwargs = dict(
+        model=AI_MODEL,
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": text},
+        ],
+    )
+    for attempt in range(3):
+        try:
+            try:
+                response = get_client().chat.completions.create(
+                    reasoning_effort="low", max_completion_tokens=12000, **kwargs
+                )
+            except Exception as first:
+                if "429" in repr(first):
+                    raise
+                response = get_client().chat.completions.create(**kwargs)
+            raw = (response.choices[0].message.content or "").strip()
+            if raw.startswith("`"):
+                raw = raw.strip("`")
+                if raw.lower().startswith("json"):
+                    raw = raw[4:]
+            data = json.loads(raw)
+            return {
+                x.get("dossierId"): x
+                for x in data.get("decisions", []) if isinstance(x, dict)
+            }
+        except Exception as exc:
+            print("AI CALL FAILED:", repr(exc), flush=True)
+            if "429" in repr(exc) and attempt < 2:
+                time.sleep(6 * (attempt + 1))
+                continue
+            return {}
+    return {}
 
 
 def decide_dossiers(dossiers):
