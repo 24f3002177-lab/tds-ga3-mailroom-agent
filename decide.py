@@ -315,7 +315,7 @@ def ask_chunk(chunk):
             {"role": "user", "content": text},
         ],
     )
-    for attempt in range(3):
+    for attempt in range(5):
         try:
             try:
                 response = get_client().chat.completions.create(
